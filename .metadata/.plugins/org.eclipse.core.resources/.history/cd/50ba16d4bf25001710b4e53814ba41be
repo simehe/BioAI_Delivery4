@@ -43,7 +43,6 @@ public class ProblemReader {
 	public static void main(String[] args) {
 		ProblemReader test = new ProblemReader();
 		test.readFile();
-		System.out.println("Testing");
 	}
 }
 	
