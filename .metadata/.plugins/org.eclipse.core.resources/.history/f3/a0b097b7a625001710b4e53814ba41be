@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public class fFileReader {
 	
-	private static final String FILENAME = "/Users/simenhellem/Documents/1.txt";
+	private static final String FILENAME = "/Users/simenhellem/Downloads/Test Data 2/1.odt";
 
 	public void readFile() {
 
@@ -18,7 +18,7 @@ public class fFileReader {
 			String sCurrentLine;
 			br = new BufferedReader(new FileReader(FILENAME));
 			while ((sCurrentLine = br.readLine()) != null) {
-				System.out.println(sCurrentLine.split(" "));
+				System.out.println(sCurrentLine);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -33,7 +33,7 @@ public class fFileReader {
 			}
 		}
 	}
-
+	
 	public static void main(String[] args) {
 		fFileReader test = new fFileReader();
 		test.readFile();
