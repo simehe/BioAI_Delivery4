@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class ProblemReader {
 	
-	private static final String FILENAME = "/Users/simenhellem/Documents/1.txt";
+	private static final String FILENAME = "/Users/simenhellem/Documents/2.txt";
 	private ArrayList<String> input = new ArrayList<String>();
 
 	public void readFile() {
@@ -20,7 +20,9 @@ public class ProblemReader {
 			String sCurrentLine;
 			br = new BufferedReader(new FileReader(FILENAME));
 			while ((sCurrentLine = br.readLine()) != null) {
-				input.add(sCurrentLine);
+				if(sCurrentLine.length() > 1){
+					input.add(sCurrentLine);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
