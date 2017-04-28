@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class ProblemReader {
 	
-	private static final String FILENAME = "/Users/simenhellem/Documents/2.txt";
+	private static final String FILENAME = "/Users/simenhellem/Documents/5.txt";
 	private ArrayList<String> input = new ArrayList<String>();
 
 	public void readFile() {
