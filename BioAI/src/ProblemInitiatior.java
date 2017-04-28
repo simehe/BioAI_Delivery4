@@ -26,6 +26,7 @@ public class ProblemInitiatior {
 		reader.readFile();
 		ProblemInitiatior initiator = new ProblemInitiatior();
 		initiator.initiate(reader.returnInput());
+		System.out.println("hello");
 	}
 	
 
