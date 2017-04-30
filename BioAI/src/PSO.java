@@ -28,18 +28,23 @@ public class PSO {
 	public Double[][] speed;
 	public Double[][] positions;
 	public double weight;
+	public int mode = 0;
 	
-	public PSO(ProblemInitiatior init){
+	
+	//CONSTRUCTOR
+	public PSO(ProblemInitiatior init, int mode){
 		this.INIT = init;
 		this.vmax = init.MACHINES * INIT.JOBS * 0.01;
 		this.weight = WMAX;
 		this.speed = new Double[POPULATION_SIZE][init.MACHINES*init.JOBS];
 		this.globBest = new Double[init.MACHINES*init.JOBS];
 		this.locBest = new Double[POPULATION_SIZE][init.MACHINES*init.JOBS];
+		this.mode = mode;
 		positions = new Double[POPULATION_SIZE][init.MACHINES*init.JOBS];
 	}
 	
-	public double MPSO(){
+	//MAIN RUNTIME METHOD
+	public int MPSO(){
 		initiate();
 		setLocalAndBest();
 		int iteration = 0;
@@ -52,14 +57,12 @@ public class PSO {
 			}
 			iteration++;
 			System.out.println(iteration + " Best so far is: " + GlobalBest);
-			//System.out.println(Arrays.toString(globBest));
 			updateLocalandBest();
 			updateWeight(iteration);
 			updateSpeedandPosition();
 		}
-		System.out.println(GlobalBest);
 		setOperationOrderFinish(globBest);
-		return 0.0;
+		return GlobalBest;
 	}
 	
 	//INITIALISING METHODS //
@@ -91,6 +94,7 @@ public class PSO {
 		}
 	}
 	
+	// HELPER
 	public Double[] copyList(Double[] list){
 		Double[] newList = new Double[list.length];
 		for (int i = 0; i < newList.length; i++) {
@@ -134,7 +138,7 @@ public class PSO {
 		}
 	}
 	
-	
+	//ALL LOCAL SEARCH METHODS //
 	public Double[] mIE(Double[] particle){
 		double randomNumber = Math.random();
 		if(randomNumber < 0.4){
@@ -152,8 +156,6 @@ public class PSO {
 		return particle;	
 	}
 	
-	//ALL LOCAL SEARCH METHODS //
-	
 	public Double[] swap(Double[] individual){
 		Random rn = new Random();
 		int indexOne = 0;
@@ -168,7 +170,6 @@ public class PSO {
 		return individual;
 	}
 	
-	//Can be optimized
 	public Double[] insert(Double[] individual){
 		Random rn = new Random();
 		int indexOne = 0;
@@ -208,9 +209,9 @@ public class PSO {
 		for (int i = 0; i < holder.length; i++) {
 			individual[indexOne+i] = holder[holder.length - 1 - i];
 		}
-		return individual;
-			
+		return individual;	
 	}
+	
 	public Double[] longDistance(Double[] individual){
 		Random rn = new Random();
 		int indexOne = 0;
@@ -242,10 +243,10 @@ public class PSO {
 	}
 	
 	// THE SA ALGORITHM //
-	
+
 	public void SA(int individual){
 		int makespan = setOperationOrder(individual);
-		double temperature = makespan - GlobalBest;
+		double temperature = Math.max(makespan - GlobalBest, this.FINAL_TEMP + 0.1);
 		while(temperature > this.FINAL_TEMP){
 			Double[] newIndivid = new Double[positions[individual].length];
 			for (int i = 0; i < positions[individual].length; i++) {
@@ -269,7 +270,11 @@ public class PSO {
 		}
 	}
 	
-	// ALL DECODE METHODS // 
+	// --------------------//
+	// ALL DECODE METHODS //
+	// --------------------//
+	
+	// TRANSLATOR INTO JOBSLIST //
 	
 	public int setOperationOrder(int individual){
 		Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
@@ -280,7 +285,12 @@ public class PSO {
 		}Arrays.sort(sortedHolders, (a, b) -> Double.compare(a[0], b[0]));
 		for (int i = 0; i < positions[individual].length; i++) {
 			sortedPositions[sortedHolders[i][1].intValue()] = (i % INIT.JOBS) +1;
-		}int max = decode2(sortedPositions);	
+		}int max = 0;
+		if(this.mode == 0){
+			max = decode(sortedPositions);	
+		}else{
+			max = decode2(sortedPositions);
+		}
 		return max;
 	}
 	
@@ -293,11 +303,34 @@ public class PSO {
 		}Arrays.sort(sortedHolders, (a, b) -> Double.compare(a[0], b[0]));
 		for (int i = 0; i < individual.length; i++) {
 			sortedPositions[sortedHolders[i][1].intValue()] = (i % INIT.JOBS) +1;
-		}int max = decode2(sortedPositions);	
+		}int max = 0;
+		if(this.mode == 0){
+			max = decode(sortedPositions);	
+		}else{
+			max = decode2(sortedPositions);
+		}
 		return max;
 	}
 	
-	// DIFFERENT DECODERS //
+	public int setOperationOrderFinish(Double[] individual){
+		Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+		Double[][] sortedHolders = new Double[INIT.MACHINES * INIT.JOBS][2];
+		for (int i = 0; i < individual.length; i++) {
+			sortedHolders[i][0] = individual[i];
+			sortedHolders[i][1] = i + 0.0;
+		}Arrays.sort(sortedHolders, (a, b) -> Double.compare(a[0], b[0]));
+		for (int i = 0; i < individual.length; i++) {
+			sortedPositions[sortedHolders[i][1].intValue()] = (i % INIT.JOBS) +1;
+		}int max = 0;
+		if(this.mode == 0){
+			max = decodeFinish(sortedPositions);	
+		}else{
+			max = decodeFinish2(sortedPositions);
+		}
+		return max;
+	}
+	
+	// DIFFERENT DECODERS (decided by mode)//
 	
 	public int decode(Integer[] jobs){
 		ArrayList<Integer> jobsList = new ArrayList<Integer>();
@@ -344,193 +377,6 @@ public class PSO {
 			}
 		}
 		return returnMax(makespan);
-	}
-	
-	//NEED TO MAKE A BETTER DECODER
-	
-	// HELPER METHODS //
-	public int checkMin(int[] jobs){
-		int min = 1;
-		for (int i = 0; i < jobs.length; i++) {
-			if(jobs[i] < min){
-				min = jobs[i];
-			}
-		}return min;
-	}
-	
-	public int returnMax(int[] makespan){
-		int max = 0;
-		for (int i = 0; i < makespan.length; i++) {
-			if (makespan[i] > max){
-				max = makespan[i];
-			}
-		}
-		return max;
-	}
-	
-	// PRINTING THE FINAL SOLUTION //
-	
-	public void printGant(ArrayList<ArrayList<ArrayList<Integer>>> gant) throws IOException{
-		String workingDirect = "writeToGant.py";
-		String arguments = gant.toString();
-		String path = "/Users/simenhellem/Documents/" + workingDirect;
-		System.out.println(path);
-        String[] cmd = {
-                "/usr/local/bin/python",
-                path,
-                arguments,
-                
-        };
-        String line;
-        Process p = Runtime.getRuntime().exec(cmd);
-        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        try{
-        	while ((line = input.readLine()) != null) {
-        		System.out.println(line);
-        	}
-        	
-        }catch(Exception e){System.out.println(e);}
-        input.close();
-    }
-	
-	public int setOperationOrderFinish(Double[] individual){
-		Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
-		Double[][] sortedHolders = new Double[INIT.MACHINES * INIT.JOBS][2];
-		for (int i = 0; i < individual.length; i++) {
-			sortedHolders[i][0] = individual[i];
-			sortedHolders[i][1] = i + 0.0;
-		}Arrays.sort(sortedHolders, (a, b) -> Double.compare(a[0], b[0]));
-		for (int i = 0; i < individual.length; i++) {
-			sortedPositions[sortedHolders[i][1].intValue()] = (i % INIT.JOBS) +1;
-		}int max = decodeFinish2(sortedPositions);	
-		return max;
-	}
-	
-	public int decodeFinish(Integer[] jobs){
-		System.out.println(jobs.length);
-		ArrayList<Integer> jobsList = new ArrayList<Integer>();
-		ArrayList<ArrayList<ArrayList<Integer>>> gant = new ArrayList<ArrayList<ArrayList<Integer>>>();
-		ArrayList<ArrayList<ArrayList<Integer>>> gantJob = new ArrayList<ArrayList<ArrayList<Integer>>>();
-		for (int i = 0; i < INIT.MACHINES; i++) {
-			ArrayList<ArrayList<Integer>> machineList = new ArrayList<ArrayList<Integer>>();
-			gant.add(machineList);
-		}for (int i = 0; i < INIT.JOBS; i++) {
-			ArrayList<ArrayList<Integer>> jList = new ArrayList<ArrayList<Integer>>();
-			gantJob.add(jList);
-		}
-		for (int i = 0; i < jobs.length; i++) {
-			jobsList.add(jobs[i]);
-		}
-		System.out.println("Lenght of joblist: " + jobsList.size());
-		//Integer[][] machinesSchedule = new Integer[INIT.MACHINES][]
-		int[] makespan = new int[INIT.MACHINES];
-		int[] jobCounter = new int[INIT.JOBS];
-		int[] jobSchedule = new int[INIT.JOBS];
-		int[] machineCounter = new int[INIT.MACHINES];
-		int idleTime = 0;
-		while(jobsList.size() > 0){
-			Boolean jobTaken = true;
-			int jobChosen = 0;
-			int[] jobRestriction = new int[INIT.JOBS];
-			while(jobTaken){
-				int job = jobsList.get(jobChosen) - 1;
-				int machine = INIT.JSSP[job][jobSchedule[job]*2];
-				int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-				if(jobCounter[job] >= 0 && machineCounter[machine] >= 0 && jobRestriction[job] == 0){
-					ArrayList<Integer> addedTask = new ArrayList<Integer>();
-					ArrayList<Integer> jTask = new ArrayList<Integer>();
-					addedTask.add(job);
-					addedTask.add(makespan[machine]);
-					addedTask.add(time);
-					jTask.add(machine);
-					jTask.add(makespan[machine]);
-					jTask.add(time);
-					jobTaken = false;
-					if (time == 0){
-						System.out.println("FOund it");
-					}
-					jobCounter[job] -= time;
-					machineCounter[machine] -= time;
-					makespan[machine] += time;
-					jobSchedule[job] += 1;
-					jobsList.remove(jobChosen);
-					gant.get(machine).add(addedTask);
-					gantJob.get(job).add(jTask);
-					
-				}
-				else{
-					jobChosen++;
-				}
-				//Think this is the right way to do it
-				if(jobChosen == jobsList.size() && jobsList.size() != 0){ //checkMin(jobRestriction) > 1){
-					for (int i = 0; i < machineCounter.length; i++) {
-						if (machineCounter[i] >= 0){
-							makespan[i] += 1;
-						}
-						machineCounter[i] += 1;
-						machineCounter[i] = Math.min(0, machineCounter[i]);
-					}for (int i = 0; i < jobCounter.length; i++) {
-						jobCounter[i] += 1;
-						jobCounter[i] = Math.min(0, jobCounter[i]);
-					}jobTaken = false;
-					idleTime++;
-				}
-				jobRestriction[job]++;
-			}
-		}
-		for (int i = 0; i < INIT.JOBS; i++) {
-			Collections.sort(gantJob.get(i), (a, b) -> Integer.compare(a.get(1), b.get(1)));
-		}
-		System.out.println(gantJob);
-		System.out.println(gant);
-		testMachineJob(gant, gantJob);
-		try{
-			System.out.println("hello");
-			printGant(gant);
-		}catch(IOException o){
-			System.out.println(o);
-		}
-		return returnMax(makespan);
-	}
-	
-	public void testMachineJob(ArrayList<ArrayList<ArrayList<Integer>>> gant, ArrayList<ArrayList<ArrayList<Integer>>> gantJob){
-		int maxM = 0;
-		int maxJ = 0;
-		int[] testM = new int[INIT.MACHINES];
-		int[] testJ = new int[INIT.JOBS];
-		for (int i = 0; i < INIT.MACHINES; i++) {
-			testM[i] -= gant.get(i).get(0).get(1);
-			int previous = 0;
-			for (int j = 0; j < gant.get(i).size(); j++) {
-				testM[i] += gant.get(i).get(j).get(1) - previous;
-				previous = gant.get(i).get(j).get(1);
-				if(testM[i] < 0){
-					System.out.println("You did something wrong with machines, machine:  " + i + " Added: " + j);
-				}testM[i] = 0;
-				testM[i] -= gant.get(i).get(j).get(2);
-				int mxM = gant.get(i).get(j).get(1) + gant.get(i).get(j).get(2);
-				if (mxM > maxM){
-					maxM = mxM;
-				}
-			}
-		}
-		for (int i = 0; i < gantJob.size(); i++) {
-			testJ[i] -= gantJob.get(i).get(0).get(1);
-			int previous = 0;
-			for (int j = 0; j < gantJob.get(i).size(); j++) {
-				testJ[i] += gantJob.get(i).get(j).get(1) - previous;
-				previous = gantJob.get(i).get(j).get(1);
-				if(testJ[i] < 0){
-					System.out.println("You did something wrong with jobs, job: " + i + "Added: " + j);
-				}testJ[i] = 0;
-				testJ[i] -= gantJob.get(i).get(j).get(2);
-				int mxJ = gantJob.get(i).get(j).get(1) + gantJob.get(i).get(j).get(2);
-				if (mxJ > maxJ){
-					maxJ = mxJ;
-				}
-			}
-		}System.out.println(maxM);
-		System.out.println(maxJ);
 	}
 	
 	public int decode2(Integer[] jobs){
@@ -601,6 +447,93 @@ public class PSO {
 		return max;
 	}
 	
+	public int decodeFinish(Integer[] jobs){
+		//System.out.println(jobs.length);
+		ArrayList<Integer> jobsList = new ArrayList<Integer>();
+		ArrayList<ArrayList<ArrayList<Integer>>> gant = new ArrayList<ArrayList<ArrayList<Integer>>>();
+		ArrayList<ArrayList<ArrayList<Integer>>> gantJob = new ArrayList<ArrayList<ArrayList<Integer>>>();
+		for (int i = 0; i < INIT.MACHINES; i++) {
+			ArrayList<ArrayList<Integer>> machineList = new ArrayList<ArrayList<Integer>>();
+			gant.add(machineList);
+		}for (int i = 0; i < INIT.JOBS; i++) {
+			ArrayList<ArrayList<Integer>> jList = new ArrayList<ArrayList<Integer>>();
+			gantJob.add(jList);
+		}
+		for (int i = 0; i < jobs.length; i++) {
+			jobsList.add(jobs[i]);
+		}
+		//System.out.println("Lenght of joblist: " + jobsList.size());
+		//Integer[][] machinesSchedule = new Integer[INIT.MACHINES][]
+		int[] makespan = new int[INIT.MACHINES];
+		int[] jobCounter = new int[INIT.JOBS];
+		int[] jobSchedule = new int[INIT.JOBS];
+		int[] machineCounter = new int[INIT.MACHINES];
+		int idleTime = 0;
+		while(jobsList.size() > 0){
+			Boolean jobTaken = true;
+			int jobChosen = 0;
+			int[] jobRestriction = new int[INIT.JOBS];
+			while(jobTaken){
+				int job = jobsList.get(jobChosen) - 1;
+				int machine = INIT.JSSP[job][jobSchedule[job]*2];
+				int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+				if(jobCounter[job] >= 0 && machineCounter[machine] >= 0 && jobRestriction[job] == 0){
+					ArrayList<Integer> addedTask = new ArrayList<Integer>();
+					ArrayList<Integer> jTask = new ArrayList<Integer>();
+					addedTask.add(job);
+					addedTask.add(makespan[machine]);
+					addedTask.add(time);
+					jTask.add(machine);
+					jTask.add(makespan[machine]);
+					jTask.add(time);
+					jobTaken = false;
+					if (time == 0){
+						System.out.println("FOund it");
+					}
+					jobCounter[job] -= time;
+					machineCounter[machine] -= time;
+					makespan[machine] += time;
+					jobSchedule[job] += 1;
+					jobsList.remove(jobChosen);
+					gant.get(machine).add(addedTask);
+					gantJob.get(job).add(jTask);
+					
+				}
+				else{
+					jobChosen++;
+				}
+				//Think this is the right way to do it
+				if(jobChosen == jobsList.size() && jobsList.size() != 0){ //checkMin(jobRestriction) > 1){
+					for (int i = 0; i < machineCounter.length; i++) {
+						if (machineCounter[i] >= 0){
+							makespan[i] += 1;
+						}
+						machineCounter[i] += 1;
+						machineCounter[i] = Math.min(0, machineCounter[i]);
+					}for (int i = 0; i < jobCounter.length; i++) {
+						jobCounter[i] += 1;
+						jobCounter[i] = Math.min(0, jobCounter[i]);
+					}jobTaken = false;
+					idleTime++;
+				}
+				jobRestriction[job]++;
+			}
+		}
+		for (int i = 0; i < INIT.JOBS; i++) {
+			Collections.sort(gantJob.get(i), (a, b) -> Integer.compare(a.get(1), b.get(1)));
+		}
+		System.out.println("This is the best result: " + returnMax(makespan));
+		//System.out.println(gantJob);
+		//System.out.println(gant);
+		testMachineJob(gant, gantJob);
+		try{
+			printGant(gant);
+		}catch(IOException o){
+			System.out.println(o);
+		}
+		return returnMax(makespan);
+	}
+
 	public int decodeFinish2(Integer[] jobs){
 		ArrayList<Integer> jobsList = new ArrayList<Integer>();
 		for (int i = 0; i < jobs.length; i++) {
@@ -676,10 +609,9 @@ public class PSO {
 				max = makespan[machine];
 			}
 		}
-		System.out.println(max);
-		System.out.println(gant);
+		System.out.println("This is the best result: " + max);
+		//System.out.println(gant);
 		try{
-			System.out.println("hello");
 			printGant(gant);
 		}catch(IOException o){
 			System.out.println(o);
@@ -687,26 +619,104 @@ public class PSO {
 			
 		return max;
 	}
-		
+
+	// ---------------- //
+	// HELPER METHODS //
+	
+	public int checkMin(int[] jobs){
+		int min = 1;
+		for (int i = 0; i < jobs.length; i++) {
+			if(jobs[i] < min){
+				min = jobs[i];
+			}
+		}return min;
+	}
+	
+	public int returnMax(int[] makespan){
+		int max = 0;
+		for (int i = 0; i < makespan.length; i++) {
+			if (makespan[i] > max){
+				max = makespan[i];
+			}
+		}
+		return max;
+	}
+	
+	// PRINTING THE FINAL SOLUTION //
+	
+	public void printGant(ArrayList<ArrayList<ArrayList<Integer>>> gant) throws IOException{
+		String workingDirect = "writeToGant.py";
+		String arguments = gant.toString();
+		String path = "/Users/simenhellem/Documents/" + workingDirect;
+		//System.out.println(path);
+        String[] cmd = {
+                "/usr/local/bin/python",
+                path,
+                arguments,
+                
+        };
+        String line;
+        Process p = Runtime.getRuntime().exec(cmd);
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        try{
+        	while ((line = input.readLine()) != null) {
+        		System.out.println(line);
+        	}
+        	
+        }catch(Exception e){System.out.println(e);}
+        input.close();
+    }
+	
+	// TESTING THE FINAL SOLUTION //
+	
+	public void testMachineJob(ArrayList<ArrayList<ArrayList<Integer>>> gant, ArrayList<ArrayList<ArrayList<Integer>>> gantJob){
+		int maxM = 0;
+		int maxJ = 0;
+		int[] testM = new int[INIT.MACHINES];
+		int[] testJ = new int[INIT.JOBS];
+		for (int i = 0; i < INIT.MACHINES; i++) {
+			testM[i] -= gant.get(i).get(0).get(1);
+			int previous = 0;
+			for (int j = 0; j < gant.get(i).size(); j++) {
+				testM[i] += gant.get(i).get(j).get(1) - previous;
+				previous = gant.get(i).get(j).get(1);
+				if(testM[i] < 0){
+					System.out.println("You did something wrong with machines, machine:  " + i + " Added: " + j);
+				}testM[i] = 0;
+				testM[i] -= gant.get(i).get(j).get(2);
+				int mxM = gant.get(i).get(j).get(1) + gant.get(i).get(j).get(2);
+				if (mxM > maxM){
+					maxM = mxM;
+				}
+			}
+		}
+		for (int i = 0; i < gantJob.size(); i++) {
+			testJ[i] -= gantJob.get(i).get(0).get(1);
+			int previous = 0;
+			for (int j = 0; j < gantJob.get(i).size(); j++) {
+				testJ[i] += gantJob.get(i).get(j).get(1) - previous;
+				previous = gantJob.get(i).get(j).get(1);
+				if(testJ[i] < 0){
+					System.out.println("You did something wrong with jobs, job: " + i + "Added: " + j);
+				}testJ[i] = 0;
+				testJ[i] -= gantJob.get(i).get(j).get(2);
+				int mxJ = gantJob.get(i).get(j).get(1) + gantJob.get(i).get(j).get(2);
+				if (mxJ > maxJ){
+					maxJ = mxJ;
+				}
+			}
+		}//System.out.println(maxM);
+		//System.out.println(maxJ);
+	}
 	
 	public static void main(String[] args) {
-		ProblemReader reader = new ProblemReader();
+		ProblemReader reader = new ProblemReader(6);
 		reader.readFile();
 		ProblemInitiatior initiator = new ProblemInitiatior();
 		initiator.initiate(reader.returnInput());
-		PSO pso = new PSO(initiator);
-		pso.MPSO();
-		/*
-		Double[] tester = new Double[6];
-		tester[0] = 1.4;
-		tester[1] = 2.3;
-		tester[2] = 0.8;
-		tester[3] = 3.6;
-		tester[4] = 4.2;
-		tester[5] = 5.1;
-		tester = pso.longDistance(tester);
-		System.out.println("hello");
-		*/
+		PSO pso = new PSO(initiator, 1);
+		int best = pso.MPSO();
+		System.out.println("Results are: " + reader.calculateOptimal(best));
 	
 	}
 
