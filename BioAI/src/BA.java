@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class BA {
 	
-	public static int ITERATIONS = 500;
+	public static int ITERATIONS = 300;
 	public static int POPULATION_SIZE = 30;
 	public static double FINAL_TEMP = 0.1;
 	public static double COOLING_RATE = 0.97;
@@ -25,7 +25,7 @@ public class BA {
 	public int[] bestTabu = new int[3];
 	public int allTimeBest;
 	
-	
+	// CONSTRUCTOR //
 	public BA(ProblemInitiatior init){
 		this.INIT = init;
 		this.positions = new Integer[POPULATION_SIZE][INIT.MACHINES*INIT.JOBS];
@@ -36,7 +36,8 @@ public class BA {
 		}
 	}
 	
-	public void main(){
+	// MAIN METHOD //
+	public int main(){
 		initiate();
 		setLocalAndBest();
 		int iteration = 0;
@@ -45,7 +46,6 @@ public class BA {
 			sortedList = sortList(sortedList);
 			neighbourSearch(sortedList);
 			generateNew(sortedList);
-			update();
 			double randomNumber = Math.random();
 			if(randomNumber < 0.1){
 				for (int i = 0; i < bestTabu.length; i++) {
@@ -55,23 +55,24 @@ public class BA {
 			iteration++;
 			updateOverallandLocal();
 			//System.out.println(Arrays.toString(this.bestTabu));
-			System.out.println(iteration + " Best so far: " + this.scores[sortedList[0]]);
+			System.out.println(iteration + " Best so far: " + allTimeBest);
 		}
-		
+		setOperationOrderFinish(allTimeB);
+		return allTimeBest;
 	}
 	
-	public void update(){
-		
-	}
-	
+	// RUNTIME METHHODS //
 	public void updateOverallandLocal(){
 		for (int i = 0; i < POPULATION_SIZE; i++) {
 			scores[i] = setOperationOrder2(i);
 			if(scores[i] < allTimeBest){
 				allTimeBest = scores[i];
+				allTimeB = copyList(positions[i]);
 			}
 		}
 	}
+	
+	// GNERATING NEW RANDOM SOLUTIONS //
 	
 	public Integer[] crossOver(Integer[] newPop, int index){
 		Random rn = new Random();
@@ -89,10 +90,10 @@ public class BA {
 		}for (int i = 0; i < numbers.size(); i++) {
 			int placeholder = 0;
 			for (int j = 0; j < newPop.length; j++) {
-				if (newPop[i] == positions[index][numbers.get(i)]){
-					placeholder = newPop[numbers.get(j)];
-					newPop[numbers.get(j)] = positions[index][numbers.get(i)];
-					newPop[i] = placeholder;
+				if (newPop[j] == positions[index][numbers.get(i)]){
+					placeholder = newPop[numbers.get(i)];
+					newPop[numbers.get(i)] = positions[index][numbers.get(i)];
+					newPop[j] = placeholder;
 				}
 			}
 		}return newPop;
@@ -165,13 +166,13 @@ public class BA {
 		
 	}
 	
+	// BA LOCAL SEARCH METHODS //
 	public void neighbourSearch(Integer[] sortedList){
 		double randomVar = Math.random();
 		if(randomVar < 1){
 			multipleSearch(sortedList, NEP);
 			multipleSearch(sortedList, NSP);
 			//Find the best from each or something
-			
 		}
 	}
 	
@@ -226,7 +227,6 @@ public class BA {
 		return individual;
 	}
 	
-	//Can be optimized
 	public Integer[] insert(Integer[] individual){
 		Random rn = new Random();
 		int indexOne = 0;
@@ -266,9 +266,9 @@ public class BA {
 		for (int i = 0; i < holder.length; i++) {
 			individual[indexOne+i] = holder[holder.length - 1 - i];
 		}
-		return individual;
-			
+		return individual;	
 	}
+	
 	public Integer[] longDistance(Integer[] individual){
 		Random rn = new Random();
 		int indexOne = 0;
@@ -299,7 +299,7 @@ public class BA {
 		return individual;
 	}
 	
-	
+	// HELPER METHODS // 
 	public Integer[] sortList(Integer[] list){
 		int x = 0;
 		for (int i = 0; i < list.length; i++) {
@@ -310,6 +310,7 @@ public class BA {
 		return list;
 	}
 	
+	// INITIATORS // 
 	public void setLocalAndBest(){
 		int min = Integer.MAX_VALUE;
 		for (int i = 0; i < POPULATION_SIZE; i++) {
@@ -345,6 +346,7 @@ public class BA {
 	    return array;
 	}
 	
+	// HELPER // 
 	public Integer[] copyList(Integer[] list){
 		Integer[] newList = new Integer[list.length];
 		for (int i = 0; i < newList.length; i++) {
@@ -353,318 +355,338 @@ public class BA {
 		return newList;
 	}
 	
-	
+	// ---------------------- //
 	// ALL DECODE METHODS // 
 	
-		public int setOperationOrder(Integer[] individual){
-			Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
-			Integer[][] sortedHolders = new Integer[INIT.MACHINES * INIT.JOBS][2];
-			for (int i = 0; i < individual.length; i++) {
-				sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
-			}int[] max = decode2(sortedPositions);	
-			return max[0];
+	// TRANSLATES INTO JOBSLIST // 
+	public int setOperationOrder(Integer[] individual){
+		Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+		Integer[][] sortedHolders = new Integer[INIT.MACHINES * INIT.JOBS][2];
+		for (int i = 0; i < individual.length; i++) {
+			sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
+		}int[] max = decode2(sortedPositions);	
+		return max[0];
+	}
+		
+	public int setOperationOrder2(int individ){
+		Integer[] individual = positions[individ];
+		Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+		Integer[][] sortedHolders = new Integer[INIT.MACHINES * INIT.JOBS][2];
+		for (int i = 0; i < individual.length; i++) {
+			sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
 		}
-		
-		public int setOperationOrder2(int individ){
-			Integer[] individual = positions[individ];
-			Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
-			Integer[][] sortedHolders = new Integer[INIT.MACHINES * INIT.JOBS][2];
-			for (int i = 0; i < individual.length; i++) {
-				sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
-			}
-			//System.out.println(Arrays.toString(sortedPositions));
-			int[] max = decode2(sortedPositions);
-			this.critical.get(individ).clear();
-			for (int i = 1; i < max.length; i++) {
-				this.critical.get(individ).add(max[i]);
-			}
-			return max[0];
+		//System.out.println(Arrays.toString(sortedPositions));
+		int[] max = decode2(sortedPositions);
+		this.critical.get(individ).clear();
+		for (int i = 1; i < max.length; i++) {
+			this.critical.get(individ).add(max[i]);
 		}
+		return max[0];
+	}
 		
-		// DIFFERENT DECODERS //
+	public int setOperationOrderFinish(Integer[] individual){
+		Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+		for (int i = 0; i < individual.length; i++) {
+			sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
+		}int max = decodeFinish2(sortedPositions);	
+		return max;
+	}
+	
+	// DIFFERENT DECODERS //
+	// NEEDS A FINISHER // 
 		
-		public int[] decode(Integer[] jobs){
-			ArrayList<Integer> jobsList = new ArrayList<Integer>();
-			for (int i = 0; i < jobs.length; i++) {
-				jobsList.add(jobs[i]);
-			}
-			//Integer[][] machinesSchedule = new Integer[INIT.MACHINES][]
-			int[] makespan = new int[INIT.MACHINES];
-			int[] jobCounter = new int[INIT.JOBS];
-			int[] jobSchedule = new int[INIT.JOBS];
-			int[] machineCounter = new int[INIT.MACHINES];
-			ArrayList<ArrayList<Integer>> machineControl = new ArrayList<ArrayList<Integer>>();
-			for (int i = 0; i < INIT.MACHINES; i++) {
-				ArrayList<Integer> indexControl = new ArrayList<Integer>();
-				machineControl.add(indexControl);
-			}
+	// DIFFERENT DECODERS //
+		
+	public int[] decode(Integer[] jobs){
+		ArrayList<Integer> jobsList = new ArrayList<Integer>();
+		for (int i = 0; i < jobs.length; i++) {
+			jobsList.add(jobs[i]);
+		}
+		//Integer[][] machinesSchedule = new Integer[INIT.MACHINES][]
+		int[] makespan = new int[INIT.MACHINES];
+		int[] jobCounter = new int[INIT.JOBS];
+		int[] jobSchedule = new int[INIT.JOBS];
+		int[] machineCounter = new int[INIT.MACHINES];
+		ArrayList<ArrayList<Integer>> machineControl = new ArrayList<ArrayList<Integer>>();
+		for (int i = 0; i < INIT.MACHINES; i++) {
 			ArrayList<Integer> indexControl = new ArrayList<Integer>();
-			for (int i = 0; i < jobsList.size(); i++) {
-				indexControl.add(i);
+			machineControl.add(indexControl);
+		}
+		ArrayList<Integer> indexControl = new ArrayList<Integer>();
+		for (int i = 0; i < jobsList.size(); i++) {
+			indexControl.add(i);
+		}
+		while(jobsList.size() > 0){
+			Boolean jobTaken = true;
+			int jobChosen = 0;
+			int[] jobRestriction = new int[INIT.JOBS];
+			while(jobTaken){
+				int job = jobsList.get(jobChosen) - 1;
+				int machine = INIT.JSSP[job][jobSchedule[job]*2];
+				int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+				if(jobCounter[job] >= 0 && machineCounter[machine] >= 0 && jobRestriction[job] == 0){
+					jobTaken = false;
+					jobCounter[job] -= time;
+					machineCounter[machine] -= time;
+					makespan[machine] += time;
+					jobSchedule[job] += 1;
+					jobsList.remove(jobChosen);
+					machineControl.get(machine).add(indexControl.get(jobChosen));
+					indexControl.remove(jobChosen);
+					
+				}
+				else{
+					jobChosen++;
+				}
+				if(jobChosen == jobsList.size()){ // || checkMin(jobRestriction) > 1){
+					for (int i = 0; i < machineCounter.length; i++) {
+						if (machineCounter[i] >= 0){
+							makespan[i] += 1;
+						}
+						machineCounter[i] = Math.min(0, machineCounter[i] + 1);
+					}for (int i = 0; i < jobCounter.length; i++) {
+						jobCounter[i] = Math.min(0, jobCounter[i] + 1);
+					}jobTaken = false;
+				}
+				jobRestriction[job]++;
 			}
-			while(jobsList.size() > 0){
-				Boolean jobTaken = true;
-				int jobChosen = 0;
-				int[] jobRestriction = new int[INIT.JOBS];
-				while(jobTaken){
-					int job = jobsList.get(jobChosen) - 1;
+		}
+		int[] ret = returnMax(makespan);
+		int[] retur = new int[1 + machineControl.get(ret[1]).size()];
+		retur[0] = ret[0];
+		for (int i = 1; i < retur.length; i++) {
+			retur[i] = machineControl.get(ret[1]).get(i-1);
+		}
+		return retur;
+	}
+	
+		
+	public int[] decode2(Integer[] jobs){
+		ArrayList<Integer> jobsList = new ArrayList<Integer>();
+		for (int i = 0; i < jobs.length; i++) {
+			jobsList.add(jobs[i]);
+		}
+		int max = 0;
+		int[] jobCounter = new int[INIT.JOBS];
+		int[] jobSchedule = new int[INIT.JOBS];
+		int[] makespan = new int[INIT.MACHINES];
+		int[] machineCounter = new int[INIT.MACHINES];
+		int[] makespanHolder = new int[INIT.JOBS];
+		ArrayList<ArrayList<Integer>> machineControl = new ArrayList<ArrayList<Integer>>();
+		for (int i = 0; i < INIT.MACHINES; i++) {
+			ArrayList<Integer> indexControl = new ArrayList<Integer>();
+			machineControl.add(indexControl);
+		}
+		ArrayList<Integer> indexControl = new ArrayList<Integer>();
+		for (int i = 0; i < jobsList.size(); i++) {
+			indexControl.add(i);
+		}
+		while (jobsList.size() > 0){
+			int min = Integer.MAX_VALUE;
+			int index = 0;
+			int chosenMachine = 0;
+			int[] jobRestriction = new int[INIT.JOBS];
+			for (int i = 0; i < jobsList.size(); i++) {
+				int job = jobsList.get(i) -1;
+				if(jobRestriction[job] == 0){
+					jobRestriction[job]++;
 					int machine = INIT.JSSP[job][jobSchedule[job]*2];
 					int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-					if(jobCounter[job] >= 0 && machineCounter[machine] >= 0 && jobRestriction[job] == 0){
-						jobTaken = false;
-						jobCounter[job] -= time;
-						machineCounter[machine] -= time;
-						makespan[machine] += time;
-						jobSchedule[job] += 1;
-						jobsList.remove(jobChosen);
-						machineControl.get(machine).add(indexControl.get(jobChosen));
-						indexControl.remove(jobChosen);
-						
+					int startTime = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
+					int addedTime = startTime - Math.abs(machineCounter[machine]);
+					startTime = Math.max(makespanHolder[job], makespan[machine]); //makespan[machine] + addedTime;
+					int endTime = startTime + time;
+					if (endTime < min){
+						min = endTime;
+						chosenMachine = machine;
+						index = i;
 					}
-					else{
-						jobChosen++;
-					}
-					if(jobChosen == jobsList.size()){ // || checkMin(jobRestriction) > 1){
-						for (int i = 0; i < machineCounter.length; i++) {
-							if (machineCounter[i] >= 0){
-								makespan[i] += 1;
-							}
-							machineCounter[i] = Math.min(0, machineCounter[i] + 1);
-						}for (int i = 0; i < jobCounter.length; i++) {
-							jobCounter[i] = Math.min(0, jobCounter[i] + 1);
-						}jobTaken = false;
-					}
-					jobRestriction[job]++;
-				}
+				}	
 			}
-			int[] ret = returnMax(makespan);
-			int[] retur = new int[1 + machineControl.get(ret[1]).size()];
-			retur[0] = ret[0];
-			for (int i = 1; i < retur.length; i++) {
-				retur[i] = machineControl.get(ret[1]).get(i-1);
-			}
-			return retur;
-			
-		}
-		
-		public int[] decode2(Integer[] jobs){
-			ArrayList<Integer> jobsList = new ArrayList<Integer>();
-			for (int i = 0; i < jobs.length; i++) {
-				jobsList.add(jobs[i]);
-			}
-			int max = 0;
-			int[] jobCounter = new int[INIT.JOBS];
-			int[] jobSchedule = new int[INIT.JOBS];
-			int[] makespan = new int[INIT.MACHINES];
-			int[] machineCounter = new int[INIT.MACHINES];
-			int[] makespanHolder = new int[INIT.JOBS];
-			ArrayList<ArrayList<Integer>> machineControl = new ArrayList<ArrayList<Integer>>();
-			for (int i = 0; i < INIT.MACHINES; i++) {
-				ArrayList<Integer> indexControl = new ArrayList<Integer>();
-				machineControl.add(indexControl);
-			}
-			ArrayList<Integer> indexControl = new ArrayList<Integer>();
+			int useIndex = index;
+			jobRestriction = new int[INIT.JOBS];
 			for (int i = 0; i < jobsList.size(); i++) {
-				indexControl.add(i);
-			}
-			while (jobsList.size() > 0){
-				int min = Integer.MAX_VALUE;
-				int index = 0;
-				int chosenMachine = 0;
-				int[] jobRestriction = new int[INIT.JOBS];
-				for (int i = 0; i < jobsList.size(); i++) {
-					int job = jobsList.get(i) -1;
-					if(jobRestriction[job] == 0){
-						jobRestriction[job]++;
-						int machine = INIT.JSSP[job][jobSchedule[job]*2];
-						int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-						int startTime = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
-						int addedTime = startTime - Math.abs(machineCounter[machine]);
-						startTime = Math.max(makespanHolder[job], makespan[machine]); //makespan[machine] + addedTime;
-						int endTime = startTime + time;
-						if (endTime < min){
-							min = endTime;
-							chosenMachine = machine;
-							index = i;
-						}
-					}	
-				}
-				int useIndex = index;
-				jobRestriction = new int[INIT.JOBS];
-				for (int i = 0; i < jobsList.size(); i++) {
-					int job = jobsList.get(i)-1;
-					int machine = INIT.JSSP[job][jobSchedule[job]*2];
-					if(jobRestriction[job] == 0 && machine == chosenMachine){
-						jobRestriction[job]++;
-						int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-						int startTimePos = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
-						int addedTime = startTimePos - Math.abs(machineCounter[machine]);
-						startTimePos = Math.max(makespanHolder[job], makespan[machine]);//makespan[machine] + addedTime;
-						if(startTimePos < min){
-							min = startTimePos;
-							useIndex = i;	
-						}
-					}
-				}int job = jobsList.get(useIndex)-1;
+				int job = jobsList.get(i)-1;
 				int machine = INIT.JSSP[job][jobSchedule[job]*2];
-				int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-				jobCounter[job] = 0;
-				machineCounter[machine] = 0;
-				jobCounter[job] -= time;
-				machineCounter[machine] -= time;
-				makespanHolder[job] = time + min;
-				makespan[machine] = time + min;
-				jobSchedule[job] += 1;
-				jobsList.remove(useIndex);
-				machineControl.get(machine).add(indexControl.get(useIndex));
-				indexControl.remove(useIndex);
-				if(makespan[machine] > max){
-					max = makespan[machine];
-				}
-			}
-			int[] ret = returnMax(makespan);
-			int[] retur = new int[1 + machineControl.get(ret[1]).size()];
-			retur[0] = ret[0];
-			for (int i = 1; i < retur.length; i++) {
-				retur[i] = machineControl.get(ret[1]).get(i-1);
-			}
-			return retur;
-		}
-		
-		public int decodeFinish2(Integer[] jobs){
-			ArrayList<Integer> jobsList = new ArrayList<Integer>();
-			for (int i = 0; i < jobs.length; i++) {
-				jobsList.add(jobs[i]);
-			}
-			ArrayList<ArrayList<ArrayList<Integer>>> gant = new ArrayList<ArrayList<ArrayList<Integer>>>();
-			for (int i = 0; i < INIT.MACHINES; i++) {
-				ArrayList<ArrayList<Integer>> machineList = new ArrayList<ArrayList<Integer>>();
-				gant.add(machineList);
-			}
-			int max = 0;
-			int[] jobCounter = new int[INIT.JOBS];
-			int[] jobSchedule = new int[INIT.JOBS];
-			int[] makespan = new int[INIT.MACHINES];
-			int[] makespanHolder = new int[INIT.JOBS];
-			int[] machineCounter = new int[INIT.MACHINES];
-			while (jobsList.size() > 0){
-				int min = Integer.MAX_VALUE;
-				int index = 0;
-				int chosenMachine = 0;
-				int[] jobRestriction = new int[INIT.JOBS];
-				for (int i = 0; i < jobsList.size(); i++) {
-					int job = jobsList.get(i) -1;
-					if(jobRestriction[job] == 0){
-						jobRestriction[job]++;
-						int machine = INIT.JSSP[job][jobSchedule[job]*2];
-						int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-						int startTime = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
-						int addedTime = startTime - Math.abs(machineCounter[machine]);
-						startTime = Math.max(makespan[machine], makespanHolder[job]);  //makespan[machine] + addedTime;
-						int endTime = startTime + time;
-						if (endTime < min){
-							min = endTime;
-							chosenMachine = machine;
-							index = i;
-						}
-					}	
-				}
-				int useIndex = index;
-				jobRestriction = new int[INIT.JOBS];
-				for (int i = 0; i < jobsList.size(); i++) {
-					int job = jobsList.get(i)-1;
-					int machine = INIT.JSSP[job][jobSchedule[job]*2];
-					if(jobRestriction[job] == 0 && machine == chosenMachine){
-						jobRestriction[job]++;
-						int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-						int startTimePos = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
-						int addedTime = startTimePos - Math.abs(machineCounter[machine]);
-						startTimePos = Math.max(makespan[machine], makespanHolder[job]);//makespan[machine] + addedTime;
-						if(startTimePos < min){
-							min = startTimePos;
-							useIndex = i;	
-						}
+				if(jobRestriction[job] == 0 && machine == chosenMachine){
+					jobRestriction[job]++;
+					int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+					int startTimePos = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
+					int addedTime = startTimePos - Math.abs(machineCounter[machine]);
+					startTimePos = Math.max(makespanHolder[job], makespan[machine]);//makespan[machine] + addedTime;
+					if(startTimePos < min){
+						min = startTimePos;
+						useIndex = i;	
 					}
-				}int job = jobsList.get(useIndex)-1;
-				int machine = INIT.JSSP[job][jobSchedule[job]*2];
-				int time = INIT.JSSP[job][1+jobSchedule[job]*2];
-				ArrayList<Integer> addedTask = new ArrayList<Integer>();
-				jobCounter[job] = 0;
-				machineCounter[machine] = 0;
-				jobCounter[job] -= time;
-				machineCounter[machine] -= time;
-				addedTask.add(job);
-				makespanHolder[job] = min + time;
-				makespan[machine] = min;
-				addedTask.add(makespan[machine]);
-				makespan[machine] += time;
-				addedTask.add(time);
-				jobSchedule[job] += 1;
-				jobsList.remove(useIndex);
-				gant.get(machine).add(addedTask);
-				if(makespan[machine] > max){
-					max = makespan[machine];
 				}
+			}int job = jobsList.get(useIndex)-1;
+			int machine = INIT.JSSP[job][jobSchedule[job]*2];
+			int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+			jobCounter[job] = 0;
+			machineCounter[machine] = 0;
+			jobCounter[job] -= time;
+			machineCounter[machine] -= time;
+			makespanHolder[job] = time + min;
+			makespan[machine] = time + min;
+			jobSchedule[job] += 1;
+			jobsList.remove(useIndex);
+			machineControl.get(machine).add(indexControl.get(useIndex));
+			indexControl.remove(useIndex);
+			if(makespan[machine] > max){
+				max = makespan[machine];
 			}
-			System.out.println(max);
-			System.out.println(gant);
-			try{
-				System.out.println("hello");
-				printGant(gant);
-			}catch(IOException o){
-				System.out.println(o);
-			}
-				
-			return max;
 		}
+		int[] ret = returnMax(makespan);
+		int[] retur = new int[1 + machineControl.get(ret[1]).size()];
+		retur[0] = ret[0];
+		for (int i = 1; i < retur.length; i++) {
+			retur[i] = machineControl.get(ret[1]).get(i-1);
+		}
+		return retur;
+	}
+	
 		
-		public int[] returnMax(int[] makespan){
-			int max = 0;
+	public int decodeFinish2(Integer[] jobs){
+		ArrayList<Integer> jobsList = new ArrayList<Integer>();
+		for (int i = 0; i < jobs.length; i++) {
+			jobsList.add(jobs[i]);
+		}
+		ArrayList<ArrayList<ArrayList<Integer>>> gant = new ArrayList<ArrayList<ArrayList<Integer>>>();
+		for (int i = 0; i < INIT.MACHINES; i++) {
+			ArrayList<ArrayList<Integer>> machineList = new ArrayList<ArrayList<Integer>>();
+			gant.add(machineList);
+		}
+		int max = 0;
+		int[] jobCounter = new int[INIT.JOBS];
+		int[] jobSchedule = new int[INIT.JOBS];
+		int[] makespan = new int[INIT.MACHINES];
+		int[] makespanHolder = new int[INIT.JOBS];
+		int[] machineCounter = new int[INIT.MACHINES];
+		while (jobsList.size() > 0){
+			int min = Integer.MAX_VALUE;
 			int index = 0;
-			for (int i = 0; i < makespan.length; i++) {
-				if (makespan[i] > max){
-					max = makespan[i];
-					index = i;
+			int chosenMachine = 0;
+			int[] jobRestriction = new int[INIT.JOBS];
+			for (int i = 0; i < jobsList.size(); i++) {
+				int job = jobsList.get(i) -1;
+				if(jobRestriction[job] == 0){
+					jobRestriction[job]++;
+					int machine = INIT.JSSP[job][jobSchedule[job]*2];
+					int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+					int startTime = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
+					int addedTime = startTime - Math.abs(machineCounter[machine]);
+					startTime = Math.max(makespan[machine], makespanHolder[job]);  //makespan[machine] + addedTime;
+					int endTime = startTime + time;
+					if (endTime < min){
+						min = endTime;
+						chosenMachine = machine;
+						index = i;
+					}
+				}	
+			}
+			int useIndex = index;
+			jobRestriction = new int[INIT.JOBS];
+			for (int i = 0; i < jobsList.size(); i++) {
+				int job = jobsList.get(i)-1;
+				int machine = INIT.JSSP[job][jobSchedule[job]*2];
+				if(jobRestriction[job] == 0 && machine == chosenMachine){
+					jobRestriction[job]++;
+					int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+					int startTimePos = Math.max(Math.abs(jobCounter[job]), Math.abs(machineCounter[machine]));
+					int addedTime = startTimePos - Math.abs(machineCounter[machine]);
+					startTimePos = Math.max(makespan[machine], makespanHolder[job]);//makespan[machine] + addedTime;
+					if(startTimePos < min){
+						min = startTimePos;
+						useIndex = i;	
+					}
 				}
-			}int[] ret = new int[2];
-			ret[0] = max;
-			ret[1] = index;
-			return ret;
+			}int job = jobsList.get(useIndex)-1;
+			int machine = INIT.JSSP[job][jobSchedule[job]*2];
+			int time = INIT.JSSP[job][1+jobSchedule[job]*2];
+			ArrayList<Integer> addedTask = new ArrayList<Integer>();
+			jobCounter[job] = 0;
+			machineCounter[machine] = 0;
+			jobCounter[job] -= time;
+			machineCounter[machine] -= time;
+			addedTask.add(job);
+			makespanHolder[job] = min + time;
+			makespan[machine] = min;
+			addedTask.add(makespan[machine]);
+			makespan[machine] += time;
+			addedTask.add(time);
+			jobSchedule[job] += 1;
+			jobsList.remove(useIndex);
+			gant.get(machine).add(addedTask);
+			if(makespan[machine] > max){
+				max = makespan[machine];
+			}
 		}
-		
-		public void printGant(ArrayList<ArrayList<ArrayList<Integer>>> gant) throws IOException{
-			String workingDirect = "writeToGant.py";
-			String arguments = gant.toString();
-			String path = "/Users/simenhellem/Documents/" + workingDirect;
-			System.out.println(path);
-	        String[] cmd = {
-	                "/usr/local/bin/python",
-	                path,
-	                arguments,
-	                
-	        };
-	        String line;
-	        Process p = Runtime.getRuntime().exec(cmd);
-	        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-	        try{
-	        	while ((line = input.readLine()) != null) {
-	        		System.out.println(line);
-	        	}
-	        	
-	        }catch(Exception e){System.out.println(e);}
-	        input.close();
-	    }
-		
-		
-		public static void main(String[] args) {
-			ProblemReader reader = new ProblemReader();
-			reader.readFile();
-			ProblemInitiatior initiator = new ProblemInitiatior();
-			initiator.initiate(reader.returnInput());
-			BA ba = new BA(initiator);
-			ba.main();
-		
+		System.out.println("The best is: " + max);
+		//System.out.println(gant);
+		try{
+			printGant(gant);
+		}catch(IOException o){
+			System.out.println(o);
 		}
+			
+		return max;
+	}
+	
+	// HELPER //
+	
+	
+	// HELPER //
+	public int[] returnMax(int[] makespan){
+		int max = 0;
+		int index = 0;
+		for (int i = 0; i < makespan.length; i++) {
+			if (makespan[i] > max){
+				max = makespan[i];
+				index = i;
+			}
+		}int[] ret = new int[2];
+		ret[0] = max;
+		ret[1] = index;
+		return ret;
+	}
+	
+	// PRINTER //
+	
+	
+	public void printGant(ArrayList<ArrayList<ArrayList<Integer>>> gant) throws IOException{
+		String workingDirect = "writeToGant.py";
+		String arguments = gant.toString();
+		String path = "/Users/simenhellem/Documents/" + workingDirect;
+		//System.out.println(path);
+        String[] cmd = {
+                "/usr/local/bin/python",
+                path,
+                arguments,
+                
+        };
+        String line;
+        Process p = Runtime.getRuntime().exec(cmd);
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        try{
+        	while ((line = input.readLine()) != null) {
+        		System.out.println(line);
+        	}
+        	
+        }catch(Exception e){System.out.println(e);}
+        input.close();
+    }
+		
+		
+	public static void main(String[] args) {
+		ProblemReader reader = new ProblemReader(5);
+		reader.readFile();
+		ProblemInitiatior initiator = new ProblemInitiatior();
+		initiator.initiate(reader.returnInput());
+		BA ba = new BA(initiator);
+		int results = ba.main();
+		System.out.println("Comparing to optimal, your are: " + reader.calculateOptimal(results));
+	
+	}
 		
 }
 
