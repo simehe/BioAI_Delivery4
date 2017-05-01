@@ -9,11 +9,12 @@ import java.util.stream.DoubleStream;
 public class ACO {
     // CONSTANTS AND VARIABLES //
     public static int ITERATIONS = 300;
-    public static int POPULATION_SIZE = 30;
+    public static int POPULATION_SIZE = 36;
     public double INIT_PHEROMONE = 2;
-    public double EVAP_CONST = 2;
-    public double ALFA = 2;
-    public double BETA = 2;
+    public double EVAP_CONST = 0.01;
+    public double Q = 50;
+    public double ALFA = 10;
+    public double BETA = 10;
 
     public ProblemInitiatior INIT;
     public int GlobalBest = Integer.MAX_VALUE;
@@ -78,12 +79,6 @@ public class ACO {
         return graph;
     }
 
-    private int getOpTime(ProblemInitiatior init, int i) {
-        int row_job = i/init.MACHINES;
-        int col = (i % init.MACHINES)*2 + 1;
-        return init.JSSP[row_job][col];
-    }
-
     public void runACO() {
         for (int iteration = 0; iteration < this.ITERATIONS; iteration++) {
             ArrayList<ArrayList<Integer>> tabu_k = new ArrayList<>();
@@ -112,43 +107,25 @@ public class ACO {
             }// All ants found a solution
 
             for (int ant_i = 0; ant_i < this.POPULATION_SIZE; ant_i++) {//Check if new best solution is found
-                int score = setOperationOrder(tabu_k.get(ant_i), false);
+                int score = setOperationOrder(arrayListToInteger(tabu_k.get(ant_i)));
                 if(score < GlobalBest){
                     GlobalBest = score;
                     globBest = tabu_k.get(ant_i);
                 }
             }//Check if new best solution is found
-
-            pheromoneUpdate(globBest);
+            pheromoneUpdate(globBest, GlobalBest);
+            System.out.println("Best so far is:");
+            System.out.println(GlobalBest);
         }// Finished with all iterations
 
         System.out.println(GlobalBest);
-        setOperationOrder(globBest, true);
+        setOperationOrderFinish(arrayListToInteger( globBest));
     }
-
-    public void pheromoneUpdate(ArrayList<Integer> globBest) {
+    private int getOpTime(ProblemInitiatior init, int i) {
+        int row_job = i/init.MACHINES;
+        int col = (i % init.MACHINES)*2 + 1;
+        return init.JSSP[row_job][col];
     }
-
-    public int setOperationOrder(ArrayList<Integer> individual, boolean finished){
-        Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
-        //Convert from Arraylist to Integer []
-        int max=0;
-        if (finished){
-            max = decodeFinish2(sortedPositions);
-        }
-        else {
-            max = decode2(sortedPositions);
-        }
-        return max;
-    }
-    public Integer[] copyList(Integer[] list){
-        Integer[] newList = new Integer[list.length];
-        for (int i = 0; i < newList.length; i++) {
-            newList[i] = list[i];
-        }
-        return newList;
-    }
-
     private int getNextOpp(ArrayList<Integer> possNodes, int current) {//aka State Transition Rule
         double [] transValue = new double[possNodes.size()];
         double [] probTrans = new double[possNodes.size()];
@@ -217,7 +194,7 @@ public class ACO {
         return possNodes;
     }
 
-    public ArrayList<Integer> nodesToIntegers(ArrayList<Node> nodes) {
+    public ArrayList<Integer> nodesToIntegers(ArrayList<Node> nodes)  {
         ArrayList<Integer> integers = new ArrayList<>();
         for (int i = 0; i < nodes.size(); i++) {// convert from nodes to Integers
             Integer nodeInt=nodes.get(i).id;
@@ -226,8 +203,60 @@ public class ACO {
         return integers;
     }
 
-    //COPIED FROM PSO:
-    public int decode2(Integer[] jobs){
+    public void pheromoneUpdate(ArrayList<Integer> globBest, int makespan) {
+        for (int i = 0; i <this.pherMatrix.length ; i++) {
+            for (int j = 0; j < this.pherMatrix[i].length; j++) {
+                pherMatrix[i][j] = pherMatrix[i][j] * (1 - this.EVAP_CONST);
+            }
+        }
+        double deltaPher = this.Q/makespan;
+        double extraPher = this.EVAP_CONST * deltaPher;
+        this.pherMatrix[0][globBest.get(0) + 1] += extraPher;
+        for (int node_i = 0; node_i < globBest.size() - 1; node_i++) {
+            int i = globBest.get( node_i ) + 1;
+            int j = globBest.get( node_i + 1) + 1;
+
+            this.pherMatrix[i][j] += extraPher;
+        }
+    }
+
+    public Integer[] copyList(Integer[] list){
+        Integer[] newList = new Integer[list.length];
+        for (int i = 0; i < newList.length; i++) {
+            newList[i] = list[i];
+        }
+        return newList;
+    }
+
+    public Integer [] arrayListToInteger ( ArrayList<Integer> arrList){
+        Integer [] list = new Integer[arrList.size()];
+        for (int i = 0; i < arrList.size(); i++) {
+            list[i] = new Integer(arrList.get(i));
+        }
+        return list;
+    }
+
+
+    //COPIED FROM BA:
+    // TRANSLATES INTO JOBSLIST //
+    public int setOperationOrder(Integer[] individual){
+        Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+        Integer[][] sortedHolders = new Integer[INIT.MACHINES * INIT.JOBS][2];
+        for (int i = 0; i < individual.length; i++) {
+            sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
+        }int[] max = decode2(sortedPositions);
+        return max[0];
+    }
+
+    public int setOperationOrderFinish(Integer[] individual){
+        Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+        for (int i = 0; i < individual.length; i++) {
+            sortedPositions[i] = (individual[i] % INIT.JOBS) +1;
+        }int max = decodeFinish2(sortedPositions);
+        return max;
+    }
+
+    public int[] decode2(Integer[] jobs){
         ArrayList<Integer> jobsList = new ArrayList<Integer>();
         for (int i = 0; i < jobs.length; i++) {
             jobsList.add(jobs[i]);
@@ -238,6 +267,15 @@ public class ACO {
         int[] makespan = new int[INIT.MACHINES];
         int[] machineCounter = new int[INIT.MACHINES];
         int[] makespanHolder = new int[INIT.JOBS];
+        ArrayList<ArrayList<Integer>> machineControl = new ArrayList<ArrayList<Integer>>();
+        for (int i = 0; i < INIT.MACHINES; i++) {
+            ArrayList<Integer> indexControl = new ArrayList<Integer>();
+            machineControl.add(indexControl);
+        }
+        ArrayList<Integer> indexControl = new ArrayList<Integer>();
+        for (int i = 0; i < jobsList.size(); i++) {
+            indexControl.add(i);
+        }
         while (jobsList.size() > 0){
             int min = Integer.MAX_VALUE;
             int index = 0;
@@ -287,13 +325,21 @@ public class ACO {
             makespan[machine] = time + min;
             jobSchedule[job] += 1;
             jobsList.remove(useIndex);
+            machineControl.get(machine).add(indexControl.get(useIndex));
+            indexControl.remove(useIndex);
             if(makespan[machine] > max){
                 max = makespan[machine];
             }
         }
-
-        return max;
+        int[] ret = returnMax(makespan);
+        int[] retur = new int[1 + machineControl.get(ret[1]).size()];
+        retur[0] = ret[0];
+        for (int i = 1; i < retur.length; i++) {
+            retur[i] = machineControl.get(ret[1]).get(i-1);
+        }
+        return retur;
     }
+
     public int decodeFinish2(Integer[] jobs){
         ArrayList<Integer> jobsList = new ArrayList<Integer>();
         for (int i = 0; i < jobs.length; i++) {
@@ -369,10 +415,9 @@ public class ACO {
                 max = makespan[machine];
             }
         }
-        System.out.println(max);
-        System.out.println(gant);
+        System.out.println("The best is: " + max);
+        //System.out.println(gant);
         try{
-            System.out.println("hello");
             printGant(gant);
         }catch(IOException o){
             System.out.println(o);
@@ -380,12 +425,26 @@ public class ACO {
 
         return max;
     }
+
+    public int[] returnMax(int[] makespan){
+        int max = 0;
+        int index = 0;
+        for (int i = 0; i < makespan.length; i++) {
+            if (makespan[i] > max){
+                max = makespan[i];
+                index = i;
+            }
+        }int[] ret = new int[2];
+        ret[0] = max;
+        ret[1] = index;
+        return ret;
+    }
+
     public void printGant(ArrayList<ArrayList<ArrayList<Integer>>> gant) throws IOException{
         String workingDirect = "writeToGant.py";
         String arguments = gant.toString();
-        String path = "C:\\Users\\Martin\\Documents\\1(10)Semester\\AI2\\BioAI_Delivery4\\BioAI\\" + workingDirect;
-        String path2 = System.getProperty("user.dir") + workingDirect;
-        System.out.println(path);
+        String path = "/C:\\Users\\Martin\\Documents\\1(10)Semester\\AI2\\BioAI_Delivery4\\BioAI\\" + workingDirect;
+        //System.out.println(path);
         String[] cmd = {
                 "python",
                 path,
@@ -406,7 +465,7 @@ public class ACO {
     //END COPY
 
     public static void main(String[] args) {
-        ProblemReader reader = new ProblemReader();
+        ProblemReader reader = new ProblemReader(5);
         reader.readFile();
         ProblemInitiatior initiator = new ProblemInitiatior();
         initiator.initiate(reader.returnInput());
@@ -417,4 +476,15 @@ public class ACO {
 }
 
 
-
+   /* public int setOperationOrder(ArrayList<Integer> individual, boolean finished){
+        Integer[] sortedPositions = new Integer[INIT.MACHINES * INIT.JOBS];
+        //Convert from Arraylist to Integer []
+        int max=0;
+        if (finished){
+            max = decodeFinish2(sortedPositions);
+        }
+        else {
+            max = decode2(sortedPositions);
+        }
+        return max;
+    }*/
