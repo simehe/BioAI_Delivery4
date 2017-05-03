@@ -678,7 +678,7 @@ public class BA {
 		
 		
 	public static void main(String[] args) {
-		ProblemReader reader = new ProblemReader(5);
+		ProblemReader reader = new ProblemReader(6);
 		reader.readFile();
 		ProblemInitiatior initiator = new ProblemInitiatior();
 		initiator.initiate(reader.returnInput());

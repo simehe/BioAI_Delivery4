@@ -22,7 +22,7 @@ public class ProblemInitiatior {
 	}
 	
 	public static void main(String[] args) {
-		ProblemReader reader = new ProblemReader(1);
+		ProblemReader reader = new ProblemReader(5);
 		reader.readFile();
 		ProblemInitiatior initiator = new ProblemInitiatior();
 		initiator.initiate(reader.returnInput());

@@ -14,9 +14,11 @@ public class PSO {
 	public static double WMAX = 1.4;
 	public static double WMIN = 0.4;
 	public static double MIE = 0.01;
+	public static double MIErand = 0.005;
 	public static double FINAL_TEMP = 0.1;
 	public static double COOLING_RATE = 0.97;
-	public static int RUNS = 10;
+	public static double MAXSA = 8;
+	public static int RUNS = 3;
 	public static int ITERATIONS = 300;
 	public static int POPULATION_SIZE = 30;
 	public double vmax;
@@ -29,6 +31,8 @@ public class PSO {
 	public Double[][] positions;
 	public double weight;
 	public int mode = 0;
+	public int GLOBALBEST;
+	public Double[] GLOBBEST;
 	
 	
 	//CONSTRUCTOR
@@ -47,22 +51,34 @@ public class PSO {
 	public int MPSO(){
 		initiate();
 		setLocalAndBest();
-		int iteration = 0;
-		while(iteration < ITERATIONS){
-			for (int i = 0; i < POPULATION_SIZE; i++) {
-				double randomNumber = Math.random();
-				if(randomNumber < MIE){
-					SA(i);
+		int iterationRun = 0;
+		for (int j = 0; j < RUNS; j++) {
+			int iteration = 0;
+			while(iteration < ITERATIONS){
+				for (int i = 0; i < POPULATION_SIZE; i++) {
+					double randomNumber = Math.random();
+					if(randomNumber < MIE){
+						SA(i);
+					}
+					if(randomNumber < MIErand + MIE && randomNumber >= MIE){
+						initiateNewRandom(i);
+						SA(i);
+					}
 				}
+				iteration++;
+				updateLocalandBest();
+				System.out.println((iteration + iterationRun) + " Best so far is: " + GlobalBest);
+				updateWeight(iteration);
+				updateSpeedandPosition();
+			}GLOBBEST = copyList(globBest);
+			GLOBALBEST = GlobalBest;
+			iterationRun += ITERATIONS;
+			for (int i = 0; i < POPULATION_SIZE; i++) {
+				localBest[i] = Integer.MAX_VALUE;
 			}
-			iteration++;
-			System.out.println(iteration + " Best so far is: " + GlobalBest);
-			updateLocalandBest();
-			updateWeight(iteration);
-			updateSpeedandPosition();
 		}
-		setOperationOrderFinish(globBest);
-		return GlobalBest;
+		setOperationOrderFinish(GLOBBEST);
+		return GLOBALBEST;
 	}
 	
 	//INITIALISING METHODS //
@@ -76,6 +92,16 @@ public class PSO {
 				GlobalBest = min;
 				globBest = copyList(positions[i]);
 			}
+		}
+	}
+	
+	public void initiateNewRandom(int individual){
+		Random rn = new Random();
+		for (int j = 0; j < INIT.MACHINES * INIT.JOBS ; j++) {
+			double randomNumber = Math.random();
+			this.positions[individual][j] = (INIT.MACHINES * INIT.JOBS) * randomNumber;
+			double speedInsert = randomNumber * this.vmax * (Math.pow(-1, rn.nextInt(10)));
+			this.speed[individual][j] = speedInsert;
 		}
 	}
 	
@@ -246,7 +272,10 @@ public class PSO {
 
 	public void SA(int individual){
 		int makespan = setOperationOrder(individual);
-		double temperature = Math.max(makespan - GlobalBest, this.FINAL_TEMP + 0.1);
+		double temperature = Math.max(makespan - GlobalBest, this.FINAL_TEMP + 0.5);
+		if(temperature > MAXSA){
+			temperature = MAXSA;
+		}
 		while(temperature > this.FINAL_TEMP){
 			Double[] newIndivid = new Double[positions[individual].length];
 			for (int i = 0; i < positions[individual].length; i++) {
